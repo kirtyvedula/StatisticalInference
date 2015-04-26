@@ -1,0 +1,87 @@
+---
+title: "Project report - Statistical Inference"
+author: "Kirty Vedula"
+date: "04/24/2015"
+output: pdf_document
+---
+## Libraries
+``` {r libraries}
+library(datasets)
+library(ggplot2)
+library(knitr)
+library(markdown)
+```
+
+## Simulating exponential distribution with rexp commmand
+```{r setting_up}
+set.seed(3)
+lambda <- 0.2
+num_sim <- 1000
+sample_size <- 40
+sim <- matrix(rexp(num_sim*sample_size, rate=lambda), num_sim, sample_size)
+row_means <- rowMeans(sim)
+```
+
+## ------------------------------------------------------------------------
+## Plot the histogram of averages
+###Density of the averages of samples
+###Theoretical center of distribution
+``` {r histogram_averages}
+hist(row_means, breaks=50, prob=TRUE,
+     main="Distribution of averages of samples,
+     drawn from exponential distribution with lambda=0.2",
+     xlab="")
+lines(density(row_means))
+abline(v=1/lambda, col="red")
+xfit <- seq(min(row_means), max(row_means), length=100)
+yfit <- dnorm(xfit, mean=1/lambda, sd=(1/lambda/sqrt(sample_size)))
+lines(xfit, yfit, pch=22, col="red", lty=2)
+legend('topright', c("simulation", "theoretical"), lty=c(1,2), col=c("black", "red"))
+```
+
+## ------------------------------------------------------------------------
+## Quantile plot for the row means calculated
+``` {r quantile_mean}
+qqnorm(row_means)
+qqline(row_means)
+```
+
+## ------------------------------------------------------------------------
+```{r simulated_mean}
+lambda_vals <- seq(4, 6, by=0.01)
+coverage <- sapply(lambda_vals, function(lamb) {
+    mu_hats <- rowMeans(matrix(rexp(sample_size*num_sim, rate=0.2),
+                               num_sim, sample_size))
+    ll <- mu_hats - qnorm(0.975) * sqrt(1/lambda**2/sample_size)
+    ul <- mu_hats + qnorm(0.975) * sqrt(1/lambda**2/sample_size)
+    mean(ll < lamb & ul > lamb)
+})
+```
+
+``` {r qplot}
+qplot(lambda_vals, coverage) + geom_hline(yintercept=0.95)
+```
+## ------------------------------------------------------------------------
+## Part 2
+
+This part performs an exploratory data analysis of at least a single plot or table highlighting basic features of the data.
+```{r plotting}
+ggplot(data=ToothGrowth, aes(x=as.factor(dose), y=len, fill=supp)) +
+  geom_bar(stat="identity",) +
+  facet_grid(. ~ supp) +
+  xlab("Dose in miligrams") +
+  ylab("Tooth length") +
+  guides(fill=guide_legend(title="Supplement type"))
+```
+
+## Fitting a model using dose and supplements as features
+```{r fit_model}
+fit <- lm(len ~ dose + supp, data=ToothGrowth)
+summary(fit)
+```
+
+## ------------------------------------------------------------------------
+## Confidence interval for the fit
+```{r conf_int}
+confint(fit)
+```
